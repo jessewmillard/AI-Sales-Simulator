@@ -152,7 +152,7 @@ button { cursor: pointer; font-family: inherit; }
   display: block;
   margin: 0 auto 14px;
   width: 100%;
-  max-width: 1000px;
+  max-width: 1500px;
   height: auto;
   filter: drop-shadow(0 10px 40px rgba(79, 70, 229, 0.5));
   animation: heroFadeIn 0.7s ease-out both;
