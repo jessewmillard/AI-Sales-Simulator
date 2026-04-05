@@ -114,6 +114,9 @@ export default function App() {
   const audioResolveRef = useRef(null) // lets handleEndCall unblock speakAI's await
   const timerRef = useRef(null)
   const ringRef = useRef(null)
+  // Replay: stores the last AI audio URL so the user can replay it
+  const lastAudioUrlRef = useRef(null)
+  const [canReplay, setCanReplay] = useState(false)
 
   // Function refs — break the circular dependency between speakAI ↔ listen ↔ handleSpeech
   const speakAIRef = useRef(null)
@@ -227,6 +230,10 @@ export default function App() {
       try {
         const audioUrl = await generateSpeech(apiKey, text, voice)
         if (!callActiveRef.current) return
+
+        // Store for replay button
+        lastAudioUrlRef.current = audioUrl
+        setCanReplay(true)
 
         const audio = new Audio(audioUrl)
         audioRef.current = audio
@@ -354,6 +361,13 @@ export default function App() {
     }
   }
 
+  // ── Replay last AI audio ──────────────────────────────────────────────────────
+  const handleReplay = () => {
+    if (!lastAudioUrlRef.current) return
+    const audio = new Audio(lastAudioUrlRef.current)
+    audio.play().catch(() => {})
+  }
+
   // ── New Call ──────────────────────────────────────────────────────────────────
   const handleNewCall = () => {
     setSummary(null)
@@ -363,6 +377,8 @@ export default function App() {
     personalityRef.current = null
     setCallDuration(0)
     setError('')
+    setCanReplay(false)
+    lastAudioUrlRef.current = null
     setScreen('pre-call')
   }
 
@@ -388,6 +404,8 @@ export default function App() {
           conversation={conversation}
           personality={personality}
           onEndCall={handleEndCall}
+          onReplay={handleReplay}
+          canReplay={canReplay}
           error={error}
         />
       )}
