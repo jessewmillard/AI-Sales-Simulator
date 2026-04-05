@@ -1,9 +1,15 @@
 import { RANDOM_PERSONALITIES } from '../services/openai'
 
+// Visual assets for hero header and difficulty card icons
+import heroImg   from '../../Assets/Header.png'
+import easyImg   from '../../Assets/Easy.png'
+import mediumImg from '../../Assets/Medium.png'
+import hardImg   from '../../Assets/Hard.png'
+
 const DIFFICULTIES = [
-  { id: 'easy',   emoji: '😊', label: 'Easy',   desc: 'Friendly, curious, open to listening' },
-  { id: 'medium', emoji: '🤔', label: 'Medium', desc: 'Skeptical, asks questions, needs convincing' },
-  { id: 'hard',   emoji: '😤', label: 'Hard',   desc: 'Busy, dismissive, throws objections' },
+  { id: 'easy',   img: easyImg,   label: 'Easy',   desc: 'Friendly, curious, open to listening' },
+  { id: 'medium', img: mediumImg, label: 'Medium', desc: 'Skeptical, asks questions, needs convincing' },
+  { id: 'hard',   img: hardImg,   label: 'Hard',   desc: 'Busy, dismissive, throws objections' },
 ]
 
 export default function PreCallScreen({ settings, onSettingsChange, onStartCall, error }) {
@@ -18,7 +24,8 @@ export default function PreCallScreen({ settings, onSettingsChange, onStartCall,
 
         {/* ── Header ── */}
         <div className="header">
-          <div className="header-logo">📞</div>
+          {/* Hero image — replaces emoji logo */}
+          <img src={heroImg} alt="AI Sales Call Simulator" className="hero-img" />
           <h1>AI Sales Call Simulator</h1>
           <p className="header-sub">Practice cold calling with a realistic AI prospect</p>
         </div>
@@ -35,13 +42,14 @@ export default function PreCallScreen({ settings, onSettingsChange, onStartCall,
         <div className="field-group">
           <label className="field-label">Prospect Difficulty</label>
           <div className="difficulty-grid">
-            {DIFFICULTIES.map(({ id, emoji, label, desc }) => (
+            {DIFFICULTIES.map(({ id, img, label, desc }) => (
               <button
                 key={id}
                 className={`diff-card diff-${id} ${settings.difficulty === id ? 'selected' : ''}`}
                 onClick={() => update('difficulty', id)}
               >
-                <span className="diff-emoji">{emoji}</span>
+                {/* Personality icon image */}
+                <img src={img} alt={label} className="diff-img" />
                 <span className="diff-label">{label}</span>
                 <span className="diff-desc">{desc}</span>
               </button>
