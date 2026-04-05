@@ -147,22 +147,27 @@ button { cursor: pointer; font-family: inherit; }
   z-index: 0;
 }
 
-/* Hero image — dominant visual, scales to container */
+/* Hero image — breaks out of the 500px inner container to span ~90% of the viewport.
+   left: 50% positions the left edge at the container's midpoint;
+   translateX(-50%) then recenters by half the image's own width,
+   which resolves to the true viewport center. */
 .hero-img {
   display: block;
-  margin: 0 auto 14px;
-  width: 100%;
-  max-width: 1500px;
+  width: 90vw;
+  max-width: 90vw;
   height: auto;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 14px;
   filter: drop-shadow(0 10px 40px rgba(79, 70, 229, 0.5));
   animation: heroFadeIn 0.7s ease-out both;
-  position: relative;
   z-index: 1;
 }
 
 @keyframes heroFadeIn {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .header h1   { position: relative; z-index: 1; }
@@ -304,7 +309,7 @@ button { cursor: pointer; font-family: inherit; }
 @media (max-width: 420px) {
   .personality-chips { grid-template-columns: 1fr; }
   /* Hero scales down gracefully on small screens */
-  .hero-img { max-width: 90%; }
+  .hero-img { width: 95vw; max-width: 95vw; }
   /* Reduce card icons on mobile */
   .diff-img { width: 78px; height: 78px; }
   .diff-card { padding: 16px 8px 12px; }
