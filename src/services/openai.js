@@ -70,9 +70,16 @@ const DIFFICULTY_PROMPTS = {
 export const getVoiceForDifficulty = (difficulty) =>
   ({ easy: 'alloy', medium: 'nova', hard: 'onyx' }[difficulty] ?? 'alloy')
 
+// ─── Backend endpoint ─────────────────────────────────────────────────────────
+// All OpenAI calls are proxied through this Netlify Function.
+// The API key lives only in the server environment — never in the browser.
+const API_ENDPOINT = '/.netlify/functions/ai'
+
 // ─── AI Chat Response ─────────────────────────────────────────────────────────
 
-export async function getAIResponse(apiKey, messages, difficulty, practiceArea, personality) {
+export async function getAIResponse(messages, difficulty, practiceArea, personality) {
+  // Build the system prompt on the frontend — this contains no secrets,
+  // just personality/difficulty config that we send to the backend.
   const basePrompt =
     personality?.systemPrompt ?? DIFFICULTY_PROMPTS[difficulty] ?? DIFFICULTY_PROMPTS.medium
 
@@ -91,43 +98,32 @@ CRITICAL RULES FOR REALISM:
 - React to specific things the salesperson just said to show you are listening.
 - Remember earlier parts of the conversation and stay consistent.`
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch(API_ENDPOINT, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'system', content: systemPrompt }, ...messages],
-      max_tokens: 100,
-      temperature: 0.9,
-      presence_penalty: 0.3,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'chat', messages, systemPrompt }),
   })
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `OpenAI API error: ${res.status}`)
+    throw new Error(err.error ?? `AI API error: ${res.status}`)
   }
 
   const data = await res.json()
-  return data.choices[0].message.content.trim()
+  return data.reply
 }
 
 // ─── Text-to-Speech ───────────────────────────────────────────────────────────
 
-export async function generateSpeech(apiKey, text, voice = 'onyx') {
-  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+export async function generateSpeech(text, voice = 'onyx') {
+  // The backend returns raw audio binary — isBase64Encoded is handled by Netlify
+  const res = await fetch(API_ENDPOINT, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ model: 'tts-1', input: text, voice, speed: 1.0 }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'tts', text, voice }),
   })
 
-  if (!res.ok) throw new Error(`TTS API error: ${res.status}`)
+  if (!res.ok) throw new Error(`TTS error: ${res.status}`)
 
   const blob = await res.blob()
   return URL.createObjectURL(blob)
@@ -135,55 +131,24 @@ export async function generateSpeech(apiKey, text, voice = 'onyx') {
 
 // ─── Post-Call Analysis ───────────────────────────────────────────────────────
 
-export async function analyzeCall(apiKey, conversation, difficulty, practiceArea) {
+export async function analyzeCall(conversation, difficulty, practiceArea) {
   if (!conversation?.length) throw new Error('No conversation to analyze')
 
   const transcript = conversation
     .map((m) => `${m.role === 'user' ? 'SALESPERSON' : 'PROSPECT'}: ${m.content}`)
     .join('\n')
 
-  const prompt = `You are an expert sales coach with 20 years of B2B sales training experience. Analyze this cold sales call transcript and provide detailed, actionable coaching feedback.
-
-CONTEXT:
-- Difficulty setting: ${difficulty}
-- Practice focus: ${practiceArea || 'General cold calling skills'}
-
-TRANSCRIPT:
-${transcript}
-
-Return a JSON object with EXACTLY this structure (no extra fields):
-{
-  "score": <integer 1–10>,
-  "scoreRationale": "<2 sentences explaining the score>",
-  "strengths": ["<specific thing done well>", "..."],
-  "weaknesses": ["<specific thing to improve>", "..."],
-  "missedOpportunities": ["<specific opportunity not taken>", "..."],
-  "suggestedResponses": [
-    { "situation": "<describe the moment>", "better": "<what they should have said>" }
-  ],
-  "perfectCallSummary": "<3–4 sentences describing how a top performer would have handled this exact call>"
-}`
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch(API_ENDPOINT, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1500,
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'analyze', transcript, difficulty, practiceArea }),
   })
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Analysis API error: ${res.status}`)
+    throw new Error(err.error ?? `Analysis error: ${res.status}`)
   }
 
   const data = await res.json()
-  return JSON.parse(data.choices[0].message.content)
+  return data.analysis
 }

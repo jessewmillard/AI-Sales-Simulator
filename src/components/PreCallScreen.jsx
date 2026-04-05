@@ -31,31 +31,6 @@ export default function PreCallScreen({ settings, onSettingsChange, onStartCall,
           </div>
         )}
 
-        {/* ── API Key ── */}
-        <div className="field-group">
-          <label className="field-label">OpenAI API Key</label>
-          <input
-            type="password"
-            className="text-input"
-            placeholder="sk-..."
-            value={settings.apiKey}
-            onChange={(e) => update('apiKey', e.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <p className="field-hint">
-            Required for AI voice &amp; responses.{' '}
-            <a
-              href="https://platform.openai.com/api-keys"
-              target="_blank"
-              rel="noreferrer"
-              className="link"
-            >
-              Get your key →
-            </a>
-          </p>
-        </div>
-
         {/* ── Difficulty ── */}
         <div className="field-group">
           <label className="field-label">Prospect Difficulty</label>
@@ -135,7 +110,7 @@ export default function PreCallScreen({ settings, onSettingsChange, onStartCall,
         </button>
 
         <p className="footer-note">
-          Chrome / Edge recommended · OpenAI gpt-4o-mini + tts-1 · Microphone required
+          Chrome / Edge recommended · Powered by GPT-4o mini · Microphone required
         </p>
       </div>
     </div>

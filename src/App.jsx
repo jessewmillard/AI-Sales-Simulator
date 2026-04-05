@@ -81,8 +81,8 @@ export default function App() {
   // Screen: 'pre-call' | 'ringing' | 'call' | 'summary'
   const [screen, setScreen] = useState('pre-call')
 
+  // API key is no longer stored in the frontend — it lives in the Netlify env
   const [settings, setSettings] = useState({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY ?? '',
     difficulty: 'medium',
     practiceArea: '',
     useRandom: false,
@@ -133,7 +133,6 @@ export default function App() {
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
 
   // ── 3. Handle what the user said ─────────────────────────────────────────────
-  // Defined first so startListening can reference it via ref.
   const handleUserSpeech = async (text) => {
     if (!text?.trim() || !callActiveRef.current) return
 
@@ -144,8 +143,9 @@ export default function App() {
     setConv(newConv)
 
     try {
-      const { apiKey, difficulty, practiceArea } = settingsRef.current
-      const aiText = await getAIResponse(apiKey, newConv, difficulty, practiceArea, personalityRef.current)
+      const { difficulty, practiceArea } = settingsRef.current
+      // API key is now handled server-side — no longer passed from the frontend
+      const aiText = await getAIResponse(newConv, difficulty, practiceArea, personalityRef.current)
 
       if (!callActiveRef.current) return // Call ended while we were waiting
 
@@ -221,36 +221,34 @@ export default function App() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
     window.speechSynthesis.cancel()
 
-    const { apiKey, difficulty } = settingsRef.current
+    const { difficulty } = settingsRef.current
     const voice = personalityRef.current?.voice ?? getVoiceForDifficulty(difficulty)
     let played = false
 
-    // ── Try OpenAI TTS (higher quality) ──
-    if (apiKey) {
-      try {
-        const audioUrl = await generateSpeech(apiKey, text, voice)
-        if (!callActiveRef.current) return
+    // ── Try OpenAI TTS via Netlify function (higher quality) ──
+    try {
+      const audioUrl = await generateSpeech(text, voice)
+      if (!callActiveRef.current) return
 
-        // Store for replay button
-        lastAudioUrlRef.current = audioUrl
-        setCanReplay(true)
+      // Store for replay button
+      lastAudioUrlRef.current = audioUrl
+      setCanReplay(true)
 
-        const audio = new Audio(audioUrl)
-        audioRef.current = audio
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
 
-        await new Promise((resolve, reject) => {
-          // Store resolve so handleEndCall can unblock us immediately
-          audioResolveRef.current = resolve
-          audio.onended = () => { audioResolveRef.current = null; resolve() }
-          audio.onerror = () => { audioResolveRef.current = null; reject(new Error('Audio playback failed')) }
-          audio.play().catch(reject)
-        })
+      await new Promise((resolve, reject) => {
+        // Store resolve so handleEndCall can unblock us immediately
+        audioResolveRef.current = resolve
+        audio.onended = () => { audioResolveRef.current = null; resolve() }
+        audio.onerror = () => { audioResolveRef.current = null; reject(new Error('Audio playback failed')) }
+        audio.play().catch(reject)
+      })
 
-        played = true
-      } catch (e) {
-        if (e.message !== 'Audio playback failed') {
-          console.warn('OpenAI TTS failed, falling back to browser TTS:', e.message)
-        }
+      played = true
+    } catch (e) {
+      if (e.message !== 'Audio playback failed') {
+        console.warn('OpenAI TTS failed, falling back to browser TTS:', e.message)
       }
     }
 
@@ -281,11 +279,6 @@ export default function App() {
 
   // ── Start Call ────────────────────────────────────────────────────────────────
   const handleStartCall = async () => {
-    if (!settings.apiKey.trim()) {
-      setError('Please enter your OpenAI API key to continue.')
-      return
-    }
-
     setError('')
     callActiveRef.current = true
     convRef.current = []
@@ -347,7 +340,6 @@ export default function App() {
 
     try {
       const analysis = await analyzeCall(
-        settingsRef.current.apiKey,
         convRef.current,
         settingsRef.current.difficulty,
         settingsRef.current.practiceArea,

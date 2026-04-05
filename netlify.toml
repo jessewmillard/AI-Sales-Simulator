@@ -1,0 +1,19 @@
+# ─── Netlify Build Configuration ─────────────────────────────────────────────
+
+[build]
+  # Run the Vite build before deploying
+  command = "npm run build"
+  # Vite outputs to /dist by default
+  publish = "dist"
+
+[functions]
+  # esbuild handles ESM/CJS and tree-shaking for smaller function bundles
+  node_bundler = "esbuild"
+
+# ─── Redirect all SPA routes to index.html ───────────────────────────────────
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  # Exclude the functions path so API calls route correctly
+  conditions = {Path = ["!/netlify/functions/*"]}
