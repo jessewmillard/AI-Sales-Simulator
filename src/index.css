@@ -153,8 +153,8 @@ button { cursor: pointer; font-family: inherit; }
    which resolves to the true viewport center. */
 .hero-img {
   display: block;
-  width: 90vw;
-  max-width: 90vw;
+  width: 45vw;
+  max-width: 45vw;
   height: auto;
   position: relative;
   left: 50%;
