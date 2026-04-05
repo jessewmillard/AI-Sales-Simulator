@@ -159,7 +159,7 @@ button { cursor: pointer; font-family: inherit; }
   position: relative;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 14px;
+  margin-bottom: 7px;
   filter: drop-shadow(0 10px 40px rgba(79, 70, 229, 0.5));
   animation: heroFadeIn 0.7s ease-out both;
   z-index: 1;
